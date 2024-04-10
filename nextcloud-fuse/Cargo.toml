@@ -1,0 +1,12 @@
+[package]
+name = "nextcloud-fuse"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nextcloud = { path = "../nextcloud" }
+fuser = "0.14.0"
+secret-service = "3.0.1"
+clap = "4.5.4"

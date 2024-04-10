@@ -1,0 +1,6 @@
+{
+  "rust-analyzer.linkedProjects": [
+    "./nextcloud/Cargo.toml",
+    "./nextcloud-fuse/Cargo.toml"
+  ]
+}
