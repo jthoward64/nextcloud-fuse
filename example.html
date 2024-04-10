@@ -1,0 +1,86 @@
+* Host nextcloud.jthoward.dev:443 was resolved.
+* IPv6: (none)
+* IPv4: 100.66.74.73
+*   Trying 100.66.74.73:443...
+* Connected to nextcloud.jthoward.dev (100.66.74.73) port 443
+* ALPN: curl offers h2,http/1.1
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+* TLSv1.3 (IN), TLS handshake, CERT verify (15):
+* TLSv1.3 (IN), TLS handshake, Finished (20):
+* TLSv1.3 (OUT), TLS change cipher, Change cipher spec (1):
+* TLSv1.3 (OUT), TLS handshake, Finished (20):
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384 / X25519 / id-ecPublicKey
+* ALPN: server accepted h2
+* Server certificate:
+*  subject: CN=*.jthoward.dev
+*  start date: Mar 13 07:20:23 2024 GMT
+*  expire date: Jun 11 07:20:22 2024 GMT
+*  subjectAltName: host "nextcloud.jthoward.dev" matched cert's "*.jthoward.dev"
+*  issuer: C=US; O=Let's Encrypt; CN=R3
+*  SSL certificate verify ok.
+*   Certificate level 0: Public key type EC/secp384r1 (384/192 Bits/secBits), signed using sha256WithRSAEncryption
+*   Certificate level 1: Public key type RSA (2048/112 Bits/secBits), signed using sha256WithRSAEncryption
+*   Certificate level 2: Public key type RSA (4096/152 Bits/secBits), signed using sha256WithRSAEncryption
+* using HTTP/2
+* Server auth using Basic with user 'jthoward'
+* [HTTP/2] [1] OPENED stream for https://nextcloud.jthoward.dev/remote.php/dav/files/jthoward/textcompare.vcf
+* [HTTP/2] [1] [:method: PROPFIND]
+* [HTTP/2] [1] [:scheme: https]
+* [HTTP/2] [1] [:authority: nextcloud.jthoward.dev]
+* [HTTP/2] [1] [:path: /remote.php/dav/files/jthoward/textcompare.vcf]
+* [HTTP/2] [1] [authorization: Basic ]
+* [HTTP/2] [1] [user-agent: curl/8.6.0]
+* [HTTP/2] [1] [accept: */*]
+> PROPFIND /remote.php/dav/files/jthoward/textcompare.vcf HTTP/2
+> Host: nextcloud.jthoward.dev
+> Authorization: Basic 
+> User-Agent: curl/8.6.0
+> Accept: */*
+> 
+* TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
+* TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
+* old SSL session ID is stale, removing
+< HTTP/2 207 
+< server: openresty
+< date: Wed, 10 Apr 2024 19:51:37 GMT
+< content-type: application/xml; charset=utf-8
+< set-cookie: oc_sessionPassphrase=ar6gtHG30Ln9nWDdGHfNi3Iqg5JjyAmdsG6LM9Wgf3FyYljln%2FUaHzotvWLIBxPmddHMtYqMX82mehvHmsfBVDOl2BpGYDqLKlsqaPYd0xdFhmECUN73baUOJhNnT0oW; path=/; secure; HttpOnly; SameSite=Lax
+< set-cookie: __Host-nc_sameSiteCookielax=true; path=/; httponly;secure; expires=Fri, 31-Dec-2100 23:59:59 GMT; SameSite=lax
+< set-cookie: __Host-nc_sameSiteCookiestrict=true; path=/; httponly;secure; expires=Fri, 31-Dec-2100 23:59:59 GMT; SameSite=strict
+< content-security-policy: default-src 'none';
+< expires: Thu, 19 Nov 1981 08:52:00 GMT
+< cache-control: no-store, no-cache, must-revalidate
+< pragma: no-cache
+< set-cookie: ocn9u8o79qyg=ghpr14ksidncivvnqdii9m168n; path=/; secure; HttpOnly; SameSite=Lax
+< vary: Brief,Prefer
+< dav: 1, 3, extended-mkcol, access-control, calendarserver-principal-property-search, nextcloud-checksum-update, nc-calendar-search, nc-enable-birthday-calendar
+< x-request-id: CjYcHQPR9wQX9hwNbE52
+< x-debug-token: CjYcHQPR9wQX9hwNbE52
+< referrer-policy: no-referrer
+< x-content-type-options: nosniff
+< x-download-options: noopen
+< x-frame-options: SAMEORIGIN
+< x-permitted-cross-domain-policies: none
+< x-xss-protection: 1; mode=block
+< 
+<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:oc="http://owncloud.org/ns"
+  xmlns:nc="http://nextcloud.org/ns">
+  <d:response>
+    <d:href>/remote.php/dav/files/jthoward/textcompare.vcf</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:getlastmodified>Thu, 28 Mar 2024 20:44:36 GMT</d:getlastmodified>
+        <d:getcontentlength>1892</d:getcontentlength>
+        <d:resourcetype />
+        <d:getetag>&quot;f16d1418cd3d8b2178bbd0bf1e0ac3e7&quot;</d:getetag>
+        <d:getcontenttype>text/vcard</d:getcontenttype>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>
+* Connection #0 to host nextcloud.jthoward.dev left intact
