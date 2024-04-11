@@ -97,9 +97,38 @@ pub struct PropStat {
 pub struct MultiStatusResponse {
     pub href: String,
     pub prop_stats: Vec<PropStat>,
+    pub response_description: Option<String>,
 }
 
 #[derive(Debug, Clone)]
 pub struct MultiStatus {
     pub responses: Vec<MultiStatusResponse>,
+}
+
+#[derive(Debug, Clone)]
+pub enum PropPatchStatus {
+    Unknown(UnknownStatus),
+    Ok,
+    Forbidden,
+    ForbiddenProtectedProperty,
+    Conflict,
+    FailedDependency,
+    InsufficientStorage,
+}
+
+#[derive(Debug, Clone)]
+pub struct PropPatch {
+    pub set_props: Vec<Prop>,
+    pub remove_props: Vec<PropTag>,
+}
+
+#[derive(Debug, Clone)]
+pub enum MkColStatus {
+    Unknown(UnknownStatus),
+    Created,
+    Forbidden,
+    MethodNotAllowed,
+    Conflict,
+    UnsupportedMediaType,
+    InsufficientStorage,
 }

@@ -9,3 +9,4 @@ edition = "2021"
 reqwest = { version = "0.12", features = [] }
 tokio = { version = "1", features = ["full"] }
 quick-xml = { version = "0.31.0", features = ["async-tokio"] }
+url = "2.5.0"
