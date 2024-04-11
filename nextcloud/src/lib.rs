@@ -10,7 +10,19 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+        let mut config = include_str!("../../.config").split_whitespace();
+        let username = config.next().unwrap();
+        let password = config.next().unwrap();
+        let base_url = config.next().unwrap();
+        let dav_path = config.next().unwrap();
+
+        let provider = client::Nextcloud::new(
+            base_url.to_string(),
+            dav_path.to_string(),
+            username.to_string(),
+            password.to_string(),
+        );
+
+        println!("{:?}", provider);
     }
 }

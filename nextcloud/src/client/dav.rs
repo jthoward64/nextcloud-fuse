@@ -16,6 +16,8 @@ pub fn move_method() -> reqwest::Method {
 
 pub enum DavError {
     BadUrl(url::ParseError),
+    Network(reqwest::Error),
+    XmlParse(quick_xml::Error),
 }
 
 pub trait DavProvider {
