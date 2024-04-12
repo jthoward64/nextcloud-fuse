@@ -1,5 +1,7 @@
 mod client;
 
+pub use client::Nextcloud;
+
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }

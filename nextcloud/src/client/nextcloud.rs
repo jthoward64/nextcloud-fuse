@@ -1,4 +1,8 @@
-use super::dav::DavProvider;
+use super::{
+    dav::{DavItem, DavProvider},
+    pase_propfind::pase_propfind,
+    start_dav::start_propfind,
+};
 
 #[derive(Debug, Clone)]
 pub struct Nextcloud {
@@ -18,6 +22,28 @@ impl Nextcloud {
             username,
             password,
         }
+    }
+
+    pub async fn ls(&self, path: &str) -> Result<Vec<super::dav::DavItem>, super::dav::DavError> {
+        let request =
+            start_propfind(self, path)?.body("<propfind xmlns=\"DAV:\"><allprop /></propfind>");
+        let response = request
+            .send()
+            .await
+            .map_err(super::dav::DavError::Network)?;
+        let body = response
+            .text()
+            .await
+            .map_err(super::dav::DavError::Network)?;
+        let value = pase_propfind(body)?;
+
+        let contents: Vec<DavItem> = vec![];
+
+        for response in value.responses {
+            println!("{:?}", response)
+        }
+
+        Ok(contents)
     }
 }
 

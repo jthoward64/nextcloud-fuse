@@ -22,6 +22,22 @@ pub enum DavError {
     NoContent,
 }
 
+pub struct Folder {
+    pub name: String,
+    pub path: String,
+}
+
+pub struct File {
+    pub name: String,
+    pub path: String,
+    pub size: u64,
+}
+
+pub enum DavItem {
+    Folder(Folder),
+    File(File),
+}
+
 pub trait DavProvider {
     fn files_url_string(&self) -> String;
     fn add_auth_header(&self, req: reqwest::RequestBuilder) -> reqwest::RequestBuilder;

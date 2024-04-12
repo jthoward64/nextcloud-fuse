@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 nextcloud = { path = "../nextcloud" }
-fuser = "0.14.0"
+fuse3 = { version = "0.7.1", features = ["tokio-runtime", "unprivileged"] }
 secret-service = "3.0.1"
 clap = "4.5.4"
