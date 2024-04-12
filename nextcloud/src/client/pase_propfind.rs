@@ -188,8 +188,13 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
                         }
                     } else if tag.namespace == "d" && tag.name == "status" {
                         if let Some(ref mut r) = response {
-                            // TODO: parse status
-                            propstat_status = Some(PropStatStatus::Ok);
+                            propstat_status = match e.unescape() {
+                                Ok(h) => {
+                                    let status = h.to_string();
+                                    parse_prop_stat_code(status)
+                                }
+                                Err(_) => Some(PropStatStatus::Unknown(UnknownStatus::Unknown)),
+                            };
                         }
                     } else if let Some(ref mut p) = prop {
                         p.content = PropContent::Text(match e.unescape() {
@@ -208,6 +213,44 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
     match multi_status {
         Some(m) => Ok(m),
         None => Err(DavError::NoContent),
+    }
+}
+
+fn parse_prop_stat_code(status: String) -> Option<PropStatStatus> {
+    if status.starts_with("HTTP/1.1 ") {
+        let status_code = status.split_whitespace().nth(1);
+        match status_code {
+            Some(val) => {
+                let code = match val.parse::<u16>() {
+                    Ok(c) => c,
+                    Err(_) => 0,
+                };
+
+                match code {
+                    200 => Some(PropStatStatus::Ok),
+                    404 => Some(PropStatStatus::NotFound),
+                    403 => Some(PropStatStatus::Forbidden),
+                    401 => Some(PropStatStatus::Unauthorized),
+                    _ => match status_code {
+                        Some(val) => {
+                            if val.starts_with("2") {
+                                Some(PropStatStatus::Ok)
+                            } else if val.starts_with("4") {
+                                Some(PropStatStatus::Unknown(UnknownStatus::UnknownClientError))
+                            } else if val.starts_with("5") {
+                                Some(PropStatStatus::Unknown(UnknownStatus::UnknownServerError))
+                            } else {
+                                Some(PropStatStatus::Unknown(UnknownStatus::Unknown))
+                            }
+                        }
+                        None => Some(PropStatStatus::Unknown(UnknownStatus::Unknown)),
+                    },
+                }
+            }
+            None => Some(PropStatStatus::Unknown(UnknownStatus::Unknown)),
+        }
+    } else {
+        Some(PropStatStatus::Unknown(UnknownStatus::Unknown))
     }
 }
 

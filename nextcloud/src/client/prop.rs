@@ -133,7 +133,7 @@ pub enum PropPatchStatus {
     Unknown(UnknownStatus),
     Ok,
     Forbidden,
-    ForbiddenProtectedProperty,
+    // ForbiddenProtectedProperty,
     Conflict,
     FailedDependency,
     InsufficientStorage,
