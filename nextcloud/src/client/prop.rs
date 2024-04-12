@@ -1,11 +1,31 @@
-trait ToXml {
+use quick_xml::name::QName;
+
+pub trait ToXml {
     fn to_xml(&self) -> String;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PropTag {
-    namespace: String,
-    name: String,
+    pub namespace: String,
+    pub name: String,
+}
+
+impl<'a> From<QName<'a>> for PropTag {
+    fn from(qname: QName) -> Self {
+        Self {
+            namespace: match qname.prefix() {
+                Some(prefix) => match String::from_utf8(Vec::from(prefix.into_inner())) {
+                    Ok(prefix) => prefix,
+                    Err(_) => "".to_string(),
+                },
+                None => "".to_string(),
+            },
+            name: match String::from_utf8(Vec::from(qname.local_name().into_inner())) {
+                Ok(name) => name,
+                Err(_) => "".to_string(),
+            },
+        }
+    }
 }
 
 impl ToXml for PropTag {
@@ -15,15 +35,16 @@ impl ToXml for PropTag {
 }
 
 #[derive(Debug, Clone)]
-enum PropContent {
+pub enum PropContent {
+    Empty,
     Text(String),
     Props(Vec<Prop>),
 }
 
 #[derive(Debug, Clone)]
 pub struct Prop {
-    tag: PropTag,
-    content: PropContent,
+    pub tag: PropTag,
+    pub content: PropContent,
 }
 
 impl ToXml for Prop {
@@ -35,6 +56,7 @@ impl ToXml for Prop {
                 .map(|prop| prop.to_xml())
                 .collect::<Vec<String>>()
                 .join(""),
+            PropContent::Empty => "".to_string(),
         };
         format!(
             r#"<{}:{}>{}</{}:{}>"#,
@@ -45,6 +67,7 @@ impl ToXml for Prop {
 
 #[derive(Debug, Clone)]
 pub enum UnknownStatus {
+    Unknown,
     UnknownSuccess,
     UnknownClientError,
     UnknownServerError,

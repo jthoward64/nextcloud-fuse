@@ -1,0 +1,22 @@
+<d:multistatus xmlns:d="DAV:" xmlns:s="http://sabredav.org/ns" xmlns:oc="http://owncloud.org/ns"
+  xmlns:nc="http://nextcloud.org/ns">
+  <d:response>
+    <d:href>/remote.php/dav/files/jthoward/textcompare.vcf</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:getlastmodified>Thu, 28 Mar 2024 20:44:36 GMT</d:getlastmodified>
+        <d:getcontentlength>1892</d:getcontentlength>
+        <d:resourcetype />
+        <d:getetag>&quot;f16d1418cd3d8b2178bbd0bf1e0ac3e7&quot;</d:getetag>
+        <d:getcontenttype>text/vcard</d:getcontenttype>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+    <d:propstat>
+      <d:prop>
+        <d:secret />
+      </d:prop>
+      <d:status>HTTP/1.1 403 Forbidden</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>

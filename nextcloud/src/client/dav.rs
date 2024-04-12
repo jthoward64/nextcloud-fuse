@@ -14,10 +14,12 @@ pub fn move_method() -> reqwest::Method {
     reqwest::Method::from_bytes(b"MOVE").unwrap()
 }
 
+#[derive(Debug)]
 pub enum DavError {
     BadUrl(url::ParseError),
     Network(reqwest::Error),
     XmlParse(quick_xml::Error),
+    NoContent,
 }
 
 pub trait DavProvider {
