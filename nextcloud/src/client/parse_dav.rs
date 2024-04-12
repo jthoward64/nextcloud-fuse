@@ -143,6 +143,38 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
 
                 stack.pop();
             }
+            Event::Empty(e) => {
+                let prop_tag = PropTag::from(e.name());
+
+                let this_prop = Prop {
+                    tag: prop_tag.clone(),
+                    content: PropContent::Empty,
+                };
+
+                match &mut prop {
+                    Some(p) => match p.content {
+                        PropContent::Text(_) | PropContent::Empty => {
+                            p.content = PropContent::Props(vec![p.clone()]);
+                        }
+                        PropContent::Props(ref mut props) => {
+                            props.push(this_prop);
+                        }
+                    },
+                    None => {
+                        if let Some(ref mut pl) = prop_list {
+                            // If we have an open prop list, add this prop to it
+                            match pl.content {
+                                PropContent::Text(_) | PropContent::Empty => {
+                                    pl.content = PropContent::Props(vec![this_prop]);
+                                }
+                                PropContent::Props(ref mut props) => {
+                                    props.push(this_prop);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             Event::Text(e) => match stack.last() {
                 Some(tag) => {
                     // d:href, d:status, and props can have text content
