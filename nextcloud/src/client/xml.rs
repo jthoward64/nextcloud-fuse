@@ -1,3 +1,5 @@
+use std::ptr;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct XmlTag {
     pub namespace: String,
@@ -151,6 +153,25 @@ impl Xml {
             XmlContent::Xml(_) => true,
             _ => false,
         }
+    }
+
+    pub fn lookup(&mut self, target: &Xml) -> Option<&mut Xml> {
+        if ptr::eq(self, target) {
+            return Some(self);
+        }
+
+        match &mut self.content {
+            XmlContent::Xml(children) => {
+                for child in children {
+                    if let Some(found) = child.lookup(target) {
+                        return Some(found);
+                    }
+                }
+            }
+            _ => (),
+        }
+
+        None
     }
 }
 
