@@ -187,7 +187,7 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
                             };
                         }
                     } else if tag.namespace == "d" && tag.name == "status" {
-                        if let Some(ref mut r) = response {
+                        if response.is_some() {
                             propstat_status = match e.unescape() {
                                 Ok(h) => {
                                     let status = h.to_string();
