@@ -51,11 +51,107 @@ impl ToString for Attribute {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+enum XmlContent {
+    Text(String),
+    Xml(Vec<Xml>),
+    Empty,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Xml {
-    pub tag: XmlTag,
-    pub attributes: Vec<Attribute>,
-    pub text: String,
-    pub children: Vec<Xml>,
+    tag: XmlTag,
+    attributes: Vec<Attribute>,
+    content: XmlContent,
+}
+
+impl Xml {
+    pub fn new(tag: XmlTag) -> Self {
+        Self {
+            tag,
+            attributes: Vec::new(),
+            content: XmlContent::Empty,
+        }
+    }
+
+    pub fn with_attributes(&mut self, attributes: Vec<Attribute>) -> &mut Self {
+        self.attributes = attributes;
+        self
+    }
+
+    pub fn with_text(&mut self, text: String) -> &mut Self {
+        self.content = XmlContent::Text(text);
+        self
+    }
+
+    pub fn with_children(&mut self, children: Vec<Xml>) -> &mut Self {
+        self.content = XmlContent::Xml(children);
+        self
+    }
+
+    pub fn add_attribute(&mut self, attribute: Attribute) -> &mut Self {
+        self.attributes.push(attribute);
+        self
+    }
+
+    pub fn with_child(&mut self, child: Xml) -> &mut Self {
+        match &mut self.content {
+            XmlContent::Xml(children) => {
+                children.push(child);
+                self
+            }
+            _ => self.with_children(vec![child]),
+        }
+    }
+
+    pub fn text(&self) -> Option<&String> {
+        match &self.content {
+            XmlContent::Text(text) => Some(text),
+            _ => None,
+        }
+    }
+
+    pub fn children(&self) -> Option<&Vec<Xml>> {
+        match &self.content {
+            XmlContent::Xml(children) => Some(children),
+            _ => None,
+        }
+    }
+
+    pub fn children_vec(&self) -> Vec<&Xml> {
+        match &self.content {
+            XmlContent::Xml(children) => children.iter().collect(),
+            _ => Vec::new(),
+        }
+    }
+
+    pub fn attributes(&self) -> &Vec<Attribute> {
+        &self.attributes
+    }
+
+    pub fn tag(&self) -> &XmlTag {
+        &self.tag
+    }
+
+    pub fn is_empty(&self) -> bool {
+        match &self.content {
+            XmlContent::Empty => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_text(&self) -> bool {
+        match &self.content {
+            XmlContent::Text(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_xml(&self) -> bool {
+        match &self.content {
+            XmlContent::Xml(_) => true,
+            _ => false,
+        }
+    }
 }
 
 impl ToXml for Xml {
@@ -67,24 +163,26 @@ impl ToXml for Xml {
             .collect::<Vec<String>>()
             .join(" ");
 
-        let children = self
-            .children
-            .iter()
-            .map(|child| child.to_xml())
-            .collect::<Vec<String>>()
-            .join("");
-
         let tag_full_name = self.tag.full_name();
-        if self.text.is_empty() {
-            format!(
+
+        if let Some(text) = &self.text() {
+            return format!(
                 "<{} {}>{}</{}>",
-                tag_full_name, attributes, children, tag_full_name
-            )
+                tag_full_name, attributes, text, tag_full_name
+            );
+        } else if let Some(children) = &self.children() {
+            let children_xml = children
+                .iter()
+                .map(|child| child.to_xml())
+                .collect::<Vec<String>>()
+                .join("");
+
+            return format!(
+                "<{} {}>{}</{}>",
+                tag_full_name, attributes, children_xml, tag_full_name
+            );
         } else {
-            format!(
-                "<{} {}>{}</{}>",
-                tag_full_name, attributes, self.text, tag_full_name
-            )
+            return format!("<{} {} />", tag_full_name, attributes);
         }
     }
 }

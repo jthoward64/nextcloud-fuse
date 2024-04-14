@@ -1,11 +1,11 @@
+use std::{rc::Rc, vec};
+
 use quick_xml::{events::Event, Reader};
 
 use super::{
     dav::DavError,
-    prop::{
-        MultiStatus, MultiStatusResponse, Prop, PropContent, PropStat, PropStatStatus, PropTag,
-        UnknownStatus,
-    },
+    prop::{MultiStatus, MultiStatusResponse, PropStat, PropStatStatus, UnknownStatus},
+    xml::{Xml, XmlTag},
 };
 
 pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
@@ -16,76 +16,65 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
 
     let mut response: Option<MultiStatusResponse> = None;
     let mut propstat: Option<PropStat> = None;
+    let mut propstat_prop_list: Option<Vec<Rc<Xml>>> = None;
     let mut propstat_status: Option<PropStatStatus> = None;
-    let mut prop_list: Option<Prop> = None;
-    let mut prop: Option<Prop> = None;
 
-    let mut stack: Vec<PropTag> = Vec::new();
+    let mut stack: Vec<XmlTag> = Vec::new();
+
+    let mut prop_list_stack: Vec<&mut Xml> = Vec::new();
 
     loop {
         match reader.read_event().unwrap() {
             Event::Start(e) => {
-                let prop_tag = PropTag::from(e.name());
+                let tag = XmlTag::from(e.name());
 
-                if prop_tag.namespace == "d"
-                    && prop_tag.name == "multistatus"
-                    && multi_status.is_none()
-                {
+                if tag.namespace == "d" && tag.name == "multistatus" && multi_status.is_none() {
                     // d:multistatus is the root element
                     multi_status = Some(MultiStatus {
                         responses: Vec::new(),
                     });
-                } else if prop_tag.namespace == "d"
-                    && prop_tag.name == "response"
-                    && response.is_none()
-                {
+                } else if tag.namespace == "d" && tag.name == "response" && response.is_none() {
                     // d:response is a child of multistatus
                     response = Some(MultiStatusResponse {
                         href: "".to_string(),
                         prop_stats: Vec::new(),
                         response_description: None,
                     });
-                } else if prop_tag.namespace == "d"
-                    && prop_tag.name == "propstat"
-                    && propstat.is_none()
-                {
+                } else if tag.namespace == "d" && tag.name == "propstat" && propstat.is_none() {
                     // d:propstat is a child of response
-                    propstat = Some(PropStat {
-                        status: PropStatStatus::Ok,
-                        props: Vec::new(),
-                    });
-                } else if prop_tag.namespace == "d"
-                    && prop_tag.name == "status"
-                    && propstat_status.is_none()
+                    propstat = Some(PropStat::new(PropStatStatus::Unknown(
+                        UnknownStatus::Unknown,
+                    )));
+                } else if tag.namespace == "d" && tag.name == "status" && propstat_status.is_none()
                 {
                     // d:status is a child of propstat
                     propstat_status = Some(PropStatStatus::Unknown(UnknownStatus::Unknown));
-                } else if prop_tag.namespace == "d" && prop_tag.name == "response-description" {
+                } else if tag.namespace == "d" && tag.name == "response-description" {
                     // d:response-description is a child of response
-                    // ...but we don't care about it
-                } else if prop_tag.namespace == "d"
-                    && prop_tag.name == "prop"
-                    && prop_list.is_none()
-                {
-                    // d:prop is a child of propstat
-                    prop_list = Some(Prop {
-                        tag: prop_tag.clone(),
-                        content: PropContent::Empty,
-                    });
-                } else if prop_list.is_some() && prop.is_none() {
-                    // Anything else is a child of propstat_prop
-                    prop = Some(Prop {
-                        tag: prop_tag.clone(),
-                        content: PropContent::Empty,
-                    });
+                    // ...but we don't care about it for now
+                } else if let Some(ref mut p) = propstat {
+                    if let Some(current_prop) = prop_list_stack.last() {
+                        if current_prop.tag().namespace == tag.namespace
+                            && current_prop.tag().name == tag.name
+                        {
+                            if tag.namespace == "d" && tag.name == "prop" && p.prop_list.is_empty()
+                            {
+                                // d:prop is always the first child of propstat
+                                p.prop_list.with_children(vec![]);
+                            } else if let Some(ref mut parent) = prop_list_stack.last() {
+                                // Anything else is a child of prop
+                                parent.with_child(Xml::new(tag));
+                            }
+                        }
+                    }
                 }
 
-                stack.push(prop_tag);
+                stack.push(tag);
             }
             Event::End(e) => {
-                let prop_tag = PropTag::from(e.name());
+                let tag = XmlTag::from(e.name());
 
-                if prop_tag.namespace == "d" && prop_tag.name == "response" {
+                if tag.namespace == "d" && tag.name == "response" {
                     // If we have a response, add it to the multi_status
                     if let Some(ref mut m) = multi_status {
                         if let Some(ref r) = response {
@@ -94,7 +83,7 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
                             response = None;
                         }
                     }
-                } else if prop_tag.namespace == "d" && prop_tag.name == "propstat" {
+                } else if tag.namespace == "d" && tag.name == "propstat" {
                     // If we have a propstat, add it to the response
                     if let Some(ref mut r) = response {
                         if let Some(ref mut p) = propstat {
@@ -103,7 +92,7 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
                             propstat = None;
                         }
                     }
-                } else if prop_tag.namespace == "d" && prop_tag.name == "status" {
+                } else if tag.namespace == "d" && tag.name == "status" {
                     // If we have a status, add it to the propstat
                     if let Some(ref mut p) = propstat {
                         if let Some(ref mut s) = propstat_status {
@@ -112,31 +101,15 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
                             propstat_status = None;
                         }
                     }
-                } else if prop_tag.namespace == "d" && prop_tag.name == "response-description" {
-                    // ignored
-                } else if prop_tag.namespace == "d" && prop_tag.name == "prop" {
-                    // If we have a prop list, add it to the propstat
-                    if let Some(ref mut ps) = propstat {
-                        if let Some(ref mut pl) = prop_list {
-                            ps.props.push(pl.clone());
-
-                            prop_list = None;
-                        }
-                    }
-                } else {
-                    if let Some(ref mut pl) = prop_list {
-                        // If we have a prop, add it to the prop list
-                        if let Some(ref p) = prop {
-                            match pl.content {
-                                PropContent::Text(_) | PropContent::Empty => {
-                                    pl.content = PropContent::Props(vec![p.clone()]);
-                                }
-                                PropContent::Props(ref mut props) => {
-                                    props.push(p.clone());
-                                }
-                            }
-
-                            prop = None;
+                } else if tag.namespace == "d" && tag.name == "response-description" {
+                    // ignored for now
+                } else if let Some(ref mut p) = propstat {
+                    if let Some(current_prop) = prop_list_stack.last() {
+                        if current_prop.tag().namespace == tag.namespace
+                            && current_prop.tag().name == tag.name
+                        {
+                            // Close the current prop
+                            prop_list_stack.pop();
                         }
                     }
                 }
@@ -144,35 +117,12 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
                 stack.pop();
             }
             Event::Empty(e) => {
-                let prop_tag = PropTag::from(e.name());
+                let tag = XmlTag::from(e.name());
 
-                let this_prop = Prop {
-                    tag: prop_tag.clone(),
-                    content: PropContent::Empty,
-                };
+                let this_prop = Xml::new(tag);
 
-                match &mut prop {
-                    Some(p) => match p.content {
-                        PropContent::Text(_) | PropContent::Empty => {
-                            p.content = PropContent::Props(vec![p.clone()]);
-                        }
-                        PropContent::Props(ref mut props) => {
-                            props.push(this_prop);
-                        }
-                    },
-                    None => {
-                        if let Some(ref mut pl) = prop_list {
-                            // If we have an open prop list, add this prop to it
-                            match pl.content {
-                                PropContent::Text(_) | PropContent::Empty => {
-                                    pl.content = PropContent::Props(vec![this_prop]);
-                                }
-                                PropContent::Props(ref mut props) => {
-                                    props.push(this_prop);
-                                }
-                            }
-                        }
-                    }
+                if let Some(parent) = prop_list_stack.last() {
+                    parent.with_child(this_prop);
                 }
             }
             Event::Text(e) => match stack.last() {
@@ -196,9 +146,9 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
                                 Err(_) => Some(PropStatStatus::Unknown(UnknownStatus::Unknown)),
                             };
                         }
-                    } else if let Some(ref mut p) = prop {
-                        p.content = PropContent::Text(match e.unescape() {
-                            Ok(t) => t.to_string(),
+                    } else if let Some(ref mut parent) = prop_list_stack.last() {
+                        parent.with_text(match e.unescape() {
+                            Ok(h) => h.to_string(),
                             Err(_) => "".to_string(),
                         });
                     }

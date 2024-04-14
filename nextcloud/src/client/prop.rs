@@ -48,7 +48,21 @@ impl ToXml for PropFind {
 #[derive(Debug, Clone)]
 pub struct PropStat {
     pub status: PropStatStatus,
-    pub props: Vec<Xml>,
+    pub prop_list: Xml,
+}
+
+impl PropStat {
+    pub fn new(status: PropStatStatus) -> Self {
+        Self {
+            status,
+            prop_list: Xml::new({
+                XmlTag {
+                    namespace: "d".to_string(),
+                    name: "prop".to_string(),
+                }
+            }),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
