@@ -20,6 +20,7 @@ pub enum DavError {
     Network(reqwest::Error),
     XmlParse(quick_xml::Error),
     NoContent,
+    InvariantViolation,
 }
 
 pub struct Folder {

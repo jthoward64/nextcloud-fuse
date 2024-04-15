@@ -95,14 +95,19 @@ impl Xml {
         self
     }
 
-    pub fn with_child(&mut self, child: Xml) -> &mut Self {
-        match &mut self.content {
-            XmlContent::Xml(children) => {
-                children.push(child);
-                self
+    pub fn add_child(&mut self, child: Xml) -> &Xml {
+        if self.is_xml() {
+            match &mut self.content {
+                XmlContent::Xml(children) => {
+                    children.push(child);
+                }
+                _ => (),
             }
-            _ => self.with_children(vec![child]),
+        } else {
+            self.with_children(vec![child]);
         }
+
+        self.children().unwrap().last().unwrap()
     }
 
     pub fn text(&self) -> Option<&String> {
@@ -155,8 +160,8 @@ impl Xml {
         }
     }
 
-    pub fn lookup(&mut self, target: &Xml) -> Option<&mut Xml> {
-        if ptr::eq(self, target) {
+    pub fn lookup(&mut self, target: *const Xml) -> Option<&mut Xml> {
+        if ptr::eq(ptr::from_ref(self), target) {
             return Some(self);
         }
 

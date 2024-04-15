@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use quick_xml::{events::Event, Reader};
 
 use super::{
@@ -18,7 +20,7 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
 
     let mut stack: Vec<XmlTag> = Vec::new();
 
-    let mut prop_list_stack: Vec<&Xml> = Vec::new();
+    let mut prop_list_stack: Vec<*const Xml> = Vec::new();
 
     loop {
         match reader.read_event().unwrap() {
@@ -50,23 +52,19 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
                     // d:response-description is a child of response
                     // ...but we don't care about it for now
                 } else if let Some(ref mut p) = propstat {
-                    if let Some(current_prop) = prop_list_stack.last() {
-                        if current_prop.tag().namespace == tag.namespace
-                            && current_prop.tag().name == tag.name
-                        {
-                            if tag.namespace == "d" && tag.name == "prop" && p.prop_list.is_empty()
-                            {
-                                // d:prop is always the first child of propstat
-                                p.prop_list.with_children(vec![]);
-                            } else if let Some(ref parent) = prop_list_stack.last() {
-                                // Anything else is a child of prop
-                                if let Some(mut_parent) = p.prop_list.lookup(parent) {
-                                    let child = Xml::new(tag.clone());
-                                    prop_list_stack.push(&child);
-                                    mut_parent.with_child(child);
-                                }
-                            }
+                    if tag.namespace == "d" && tag.name == "prop" && p.prop_list.is_empty() {
+                        // d:prop is always the first child of propstat
+                        p.prop_list.with_children(vec![]);
+                        prop_list_stack.push(&p.prop_list);
+                    } else if let Some(ref parent) = prop_list_stack.last() {
+                        if let Some(mut_parent) = p.prop_list.lookup(**parent) {
+                            // Anything else is a child of prop
+                            prop_list_stack.push(mut_parent.add_child(Xml::new(tag.clone())));
+                        } else {
+                            return Err(DavError::InvariantViolation);
                         }
+                    } else {
+                        return Err(DavError::InvariantViolation);
                     }
                 }
 
@@ -104,13 +102,15 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
                     }
                 } else if tag.namespace == "d" && tag.name == "response-description" {
                     // ignored for now
-                } else if propstat.is_some() {
-                    if let Some(current_prop) = prop_list_stack.last() {
-                        if current_prop.tag().namespace == tag.namespace
-                            && current_prop.tag().name == tag.name
-                        {
-                            // Close the current prop
-                            prop_list_stack.pop();
+                } else if let Some(ref mut p) = propstat {
+                    if let Some(ref parent) = prop_list_stack.last() {
+                        if let Some(mut_parent) = p.prop_list.lookup(**parent) {
+                            if mut_parent.tag().namespace == tag.namespace
+                                && mut_parent.tag().name == tag.name
+                            {
+                                // Close the current prop
+                                prop_list_stack.pop();
+                            }
                         }
                     }
                 }
@@ -123,19 +123,15 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
                 let this_prop = Xml::new(tag.clone());
 
                 if let Some(ref mut p) = propstat {
-                    if let Some(current_prop) = prop_list_stack.last() {
-                        if current_prop.tag().namespace == tag.namespace
-                            && current_prop.tag().name == tag.name
-                        {
-                            if tag.namespace == "d" && tag.name == "prop" && p.prop_list.is_empty()
-                            {
+                    if let Some(ref parent) = prop_list_stack.last() {
+                        let prop_list_empty = p.prop_list.is_empty();
+                        if let Some(mut_parent) = p.prop_list.lookup(**parent) {
+                            if tag.namespace == "d" && tag.name == "prop" && prop_list_empty {
                                 // d:prop is always the first child of propstat
                                 p.prop_list.with_children(vec![this_prop]);
-                            } else if let Some(ref parent) = prop_list_stack.last() {
+                            } else {
                                 // Anything else is a child of prop
-                                if let Some(mut_parent) = p.prop_list.lookup(parent) {
-                                    mut_parent.with_child(this_prop);
-                                }
+                                mut_parent.add_child(this_prop);
                             }
                         }
                     }
@@ -164,7 +160,7 @@ pub fn pase_propfind(body: String) -> Result<MultiStatus, DavError> {
                         }
                     } else if let Some(ref mut parent) = prop_list_stack.last() {
                         if let Some(ref mut p) = propstat {
-                            if let Some(mut_parent) = p.prop_list.lookup(parent) {
+                            if let Some(mut_parent) = p.prop_list.lookup(parent.clone().clone()) {
                                 mut_parent.with_text(match e.unescape() {
                                     Ok(h) => h.to_string(),
                                     Err(_) => "".to_string(),
@@ -226,6 +222,7 @@ fn parse_prop_stat_code(status: String) -> Option<PropStatStatus> {
 
 #[test]
 fn test_parse() {
+    // let _ = pase_propfind(include_str!("../../../text.xml").to_string());
     println!(
         "{:#?}",
         pase_propfind(include_str!("../../../text.xml").to_string())
